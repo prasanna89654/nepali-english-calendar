@@ -1,0 +1,4 @@
+enum CalendarType {
+  nepali,
+  english,
+}
