@@ -192,14 +192,15 @@ class _CalendarBodyState extends State<CalendarBody> {
   }
 
   Widget _buildNepaliCalendarGrid() {
-    // Get the total days in the current Nepali month
-    final daysInMonth = NepaliDateTime.daysInMonth(
-      _displayedNepaliMonth.year,
-      _displayedNepaliMonth.month,
-    );
+final nepaliDate = _displayedNepaliMonth;
+    final lastDayOfMonth = nepaliDate.month == 12 
+        ? NepaliDateTime(nepaliDate.year + 1, 1, 1).subtract(const Duration(days: 1))
+        : NepaliDateTime(nepaliDate.year, nepaliDate.month + 1, 1).subtract(const Duration(days: 1));
+    final daysInMonth = lastDayOfMonth.day;
 
     // Get the weekday of the first day (0 = Sunday, 1 = Monday, etc.)
-    final firstDayWeekday = _displayedNepaliMonth.weekday % 7;
+    final firstDay = NepaliDateTime(_displayedNepaliMonth.year, _displayedNepaliMonth.month, 1);
+    final firstDayWeekday = firstDay.weekday % 7;
 
     // Calculate the number of rows needed
     final rowCount = ((daysInMonth + firstDayWeekday) / 7).ceil();
