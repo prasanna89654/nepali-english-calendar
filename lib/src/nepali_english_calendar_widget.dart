@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:nepali_utils/nepali_utils.dart';
-import 'calendar_header.dart';
-import 'calendar_body.dart';
-import 'models/calendar_type.dart';
+import 'package:provider/provider.dart';
 
-class NepaliEnglishCalendar extends StatefulWidget {
+import 'providers/calendar_provider.dart';
+import 'widgets/calendar_header.dart';
+import 'widgets/calendar_body.dart';
+
+class NepaliEnglishCalendar extends StatelessWidget {
   /// Primary color used for highlighting selected dates and buttons
   final Color primaryColor;
   
@@ -25,7 +27,7 @@ class NepaliEnglishCalendar extends StatefulWidget {
 
   const NepaliEnglishCalendar({
     Key? key,
-    this.primaryColor = Colors.blue,
+    this.primaryColor = Colors.teal,
     this.backgroundColor = Colors.white,
     this.textColor = Colors.black87,
     this.initialCalendarType = CalendarType.nepali,
@@ -34,92 +36,82 @@ class NepaliEnglishCalendar extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<NepaliEnglishCalendar> createState() => _NepaliEnglishCalendarState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CalendarProvider(
+        initialCalendarType: initialCalendarType,
+      ),
+      child: _CalendarContent(
+        primaryColor: primaryColor,
+        backgroundColor: backgroundColor,
+        textColor: textColor,
+        onDateSelected: onDateSelected,
+        onNepaliDateSelected: onNepaliDateSelected,
+      ),
+    );
+  }
 }
 
-class _NepaliEnglishCalendarState extends State<NepaliEnglishCalendar> {
-  late CalendarType _currentType;
-  late DateTime _selectedEnglishDate;
-  late NepaliDateTime _selectedNepaliDate;
+class _CalendarContent extends StatelessWidget {
+  final Color primaryColor;
+  final Color backgroundColor;
+  final Color textColor;
+  final Function(DateTime)? onDateSelected;
+  final Function(NepaliDateTime)? onNepaliDateSelected;
 
-  @override
-  void initState() {
-    super.initState();
-    _currentType = widget.initialCalendarType;
-    _selectedEnglishDate = DateTime.now();
-    _selectedNepaliDate = NepaliDateTime.now();
-  }
-
-  void _toggleCalendarType() {
-    setState(() {
-      _currentType = _currentType == CalendarType.nepali 
-          ? CalendarType.english 
-          : CalendarType.nepali;
-    });
-  }
-
-  void _onEnglishDateSelected(DateTime date) {
-    setState(() {
-      _selectedEnglishDate = date;
-      _selectedNepaliDate = NepaliDateTime.fromDateTime(date);
-    });
-    
-    if (widget.onDateSelected != null) {
-      widget.onDateSelected!(date);
-    }
-  }
-
-  void _onNepaliDateSelected(NepaliDateTime date) {
-    setState(() {
-      _selectedNepaliDate = date;
-      _selectedEnglishDate = date.toDateTime();
-    });
-    
-    if (widget.onNepaliDateSelected != null) {
-      widget.onNepaliDateSelected!(date);
-    }
-    
-    if (widget.onDateSelected != null) {
-      widget.onDateSelected!(date.toDateTime());
-    }
-  }
+  const _CalendarContent({
+    Key? key,
+    required this.primaryColor,
+    required this.backgroundColor,
+    required this.textColor,
+    this.onDateSelected,
+    this.onNepaliDateSelected,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+    return Consumer<CalendarProvider>(
+      builder: (context, provider, _) {
+        // Set up callbacks
+        if (onDateSelected != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onDateSelected!(provider.selectedEnglishDate);
+          });
+        }
+        
+        if (onNepaliDateSelected != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onNepaliDateSelected!(provider.selectedNepaliDate);
+          });
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CalendarHeader(
-            isNepali: _currentType == CalendarType.nepali,
-            onToggle: _toggleCalendarType,
-            primaryColor: widget.primaryColor,
-            textColor: widget.textColor,
-            nepaliDate: _selectedNepaliDate,
-            englishDate: _selectedEnglishDate,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CalendarHeader(
+                primaryColor: primaryColor,
+                textColor: textColor,
+              ),
+              CalendarBody(
+                primaryColor: primaryColor,
+                textColor: textColor,
+              ),
+            ],
           ),
-          CalendarBody(
-            isNepali: _currentType == CalendarType.nepali,
-            primaryColor: widget.primaryColor,
-            textColor: widget.textColor,
-            selectedNepaliDate: _selectedNepaliDate,
-            selectedEnglishDate: _selectedEnglishDate,
-            onNepaliDateSelected: _onNepaliDateSelected,
-            onEnglishDateSelected: _onEnglishDateSelected,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
